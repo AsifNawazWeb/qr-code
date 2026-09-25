@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type QRCodeStyling from "qr-code-styling";
 import { buildQrOptions } from "@/lib/qr/options";
 import type { QrDesign } from "@/lib/qr/types";
+import { cn } from "@/lib/utils";
 
 const PREVIEW_SIZE = 320;
 
@@ -53,18 +54,21 @@ export default function QRPreview({ data, design }: { data: string; design: QrDe
     <div className="flex min-h-[280px] items-center justify-center">
       <div
         ref={containerRef}
-        className={
+        className={cn(
           showQr
-            ? "w-full max-w-[280px] [&>canvas]:h-auto [&>canvas]:w-full [&>svg]:h-auto [&>svg]:w-full"
-            : "hidden"
-        }
+            ? "w-full max-w-[280px] animate-fade-in overflow-hidden rounded-xl [&>canvas]:h-auto [&>canvas]:w-full [&>svg]:h-auto [&>svg]:w-full"
+            : "hidden",
+          design.transparentBackground && "qr-checkerboard",
+        )}
       />
       {!data ? (
-        <p className="max-w-[220px] text-center text-sm text-zinc-400">
+        <p className="max-w-[220px] text-center text-sm text-subtle">
           Enter content to generate a QR code
         </p>
       ) : null}
-      {data && !showQr ? <p className="text-sm text-zinc-400">Rendering…</p> : null}
+      {data && !showQr ? (
+        <p className="animate-pulse text-sm text-subtle">Rendering…</p>
+      ) : null}
     </div>
   );
 }

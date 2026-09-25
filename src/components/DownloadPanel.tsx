@@ -4,8 +4,15 @@ import { useMemo, useState } from "react";
 import { encodeContent } from "@/lib/qr/encoders";
 import { EXPORT_FORMATS, EXPORT_SIZES, exportQr, type ExportFormat } from "@/lib/qr/export";
 import { useQrStore } from "@/lib/store";
-import { sanitizeFilename } from "@/lib/utils";
+import { cn, sanitizeFilename } from "@/lib/utils";
 import { Button, Card, Field, Select, TextInput } from "./ui";
+
+const FORMAT_META: Record<ExportFormat, { short: string; kind: string }> = {
+  png: { short: "PNG", kind: "Raster" },
+  svg: { short: "SVG", kind: "Vector" },
+  jpeg: { short: "JPEG", kind: "Raster" },
+  pdf: { short: "PDF", kind: "Print" },
+};
 
 export default function DownloadPanel() {
   const content = useQrStore((state) => state.drafts[state.activeType]);
@@ -37,13 +44,33 @@ export default function DownloadPanel() {
   return (
     <Card title="Download" description="Files are generated locally in your browser.">
       <div className="flex flex-col gap-4">
-        <Field label="Format">
-          <Select
-            value={format}
-            onChange={(value) => setFormat(value as ExportFormat)}
-            options={EXPORT_FORMATS.map((entry) => ({ value: entry.value, label: entry.label }))}
-          />
-        </Field>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground">Format</span>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Export format">
+            {EXPORT_FORMATS.map((entry) => {
+              const meta = FORMAT_META[entry.value];
+              const active = entry.value === format;
+              return (
+                <button
+                  key={entry.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setFormat(entry.value)}
+                  className={cn(
+                    "flex flex-col items-start rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring",
+                    active
+                      ? "border-accent bg-surface-muted"
+                      : "border-border bg-surface hover:border-border-strong hover:bg-surface-muted/60",
+                  )}
+                >
+                  <span className="text-sm font-semibold text-foreground">{meta.short}</span>
+                  <span className="text-xs text-muted">{meta.kind}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {format !== "svg" ? (
           <Field
@@ -78,11 +105,11 @@ export default function DownloadPanel() {
         </Button>
 
         {!data ? (
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted">
             Add content in the Content panel to enable downloading.
           </p>
         ) : null}
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {error ? <p className="text-xs text-red-600 dark:text-red-400">{error}</p> : null}
       </div>
     </Card>
   );

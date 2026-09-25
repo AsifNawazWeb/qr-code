@@ -23,10 +23,10 @@ export default function PreviewPanel() {
 
   return (
     <Card title="Preview" description="Updates live as you edit.">
-      <div className="rounded-xl bg-zinc-50 p-4">
+      <div className="rounded-2xl border border-border bg-surface-inset p-4">
         <QRPreview data={data} design={design} />
       </div>
-      <p className="mt-3 truncate text-center text-xs text-zinc-500">
+      <p className="mt-3 truncate text-center text-xs text-muted">
         {data ? summary : "Add content to generate a code"}
       </p>
       <Button

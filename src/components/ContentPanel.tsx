@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef, type KeyboardEvent } from "react";
 import {
   CONTENT_TYPES,
+  type ContentType,
   type EmailContent,
   type PhoneContent,
   type QrContent,
@@ -251,10 +253,36 @@ export default function ContentPanel() {
   const content = useQrStore((state) => state.drafts[state.activeType]);
   const setActiveType = useQrStore((state) => state.setActiveType);
   const setContent = useQrStore((state) => state.setContent);
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+    const tabs = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [],
+    );
+    const current = tabs.findIndex((tab) => tab.dataset.type === activeType);
+    if (current === -1) return;
+    event.preventDefault();
+    let next = current;
+    if (event.key === "ArrowRight") next = (current + 1) % tabs.length;
+    if (event.key === "ArrowLeft") next = (current - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabs.length - 1;
+    const type = tabs[next]?.dataset.type as ContentType | undefined;
+    if (!type) return;
+    setActiveType(type);
+    tabs[next]?.focus();
+  };
 
   return (
     <Card title="Content" description="Pick a type and fill in the details.">
-      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Content type">
+      <div
+        ref={tablistRef}
+        role="tablist"
+        aria-label="Content type"
+        onKeyDown={handleKeyDown}
+        className="flex flex-wrap gap-1 rounded-xl border border-border bg-surface-muted/70 p-1"
+      >
         {CONTENT_TYPES.map((entry) => {
           const active = entry.type === activeType;
           return (
@@ -262,13 +290,15 @@ export default function ContentPanel() {
               key={entry.type}
               type="button"
               role="tab"
+              data-type={entry.type}
               aria-selected={active}
+              tabIndex={active ? 0 : -1}
               onClick={() => setActiveType(entry.type)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition",
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring",
                 active
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
+                  ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
+                  : "text-muted hover:text-foreground",
               )}
             >
               {entry.label}

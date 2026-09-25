@@ -13,23 +13,26 @@ import {
   type GradientType,
 } from "@/lib/qr/types";
 import { useQrStore } from "@/lib/store";
-import { contrastRatio } from "@/lib/utils";
-import { Button, Card, ColorField, Field, Notice, RangeField, Select, Toggle } from "./ui";
+import { cn, contrastRatio } from "@/lib/utils";
+import {
+  Button,
+  Card,
+  ColorField,
+  Field,
+  Notice,
+  RangeField,
+  SectionTitle,
+  Select,
+  Toggle,
+} from "./ui";
 
 const MAX_LOGO_BYTES = 512 * 1024;
-
-function SectionTitle({ children }: { children: string }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-      {children}
-    </h3>
-  );
-}
 
 export default function DesignPanel() {
   const design = useQrStore((state) => state.design);
   const updateDesign = useQrStore((state) => state.updateDesign);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const background = design.transparentBackground ? "#ffffff" : design.bgColor;
   const ratio = Math.min(
@@ -39,10 +42,7 @@ export default function DesignPanel() {
   const lowContrast = ratio < 3;
   const needsHigherCorrection = Boolean(design.logo) && design.errorCorrectionLevel !== "H";
 
-  const handleLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+  const loadLogo = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setLogoError("Please choose an image file.");
       return;
@@ -58,6 +58,12 @@ export default function DesignPanel() {
       updateDesign({ logo: reader.result, errorCorrectionLevel: "H" });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) loadLogo(file);
   };
 
   return (
@@ -94,7 +100,7 @@ export default function DesignPanel() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-5">
+        <div className="flex flex-col gap-3 border-t border-border/70 pt-5">
           <SectionTitle>Colors</SectionTitle>
           <ColorField
             label="Foreground"
@@ -107,7 +113,17 @@ export default function DesignPanel() {
             onChange={(useGradient) => updateDesign({ useGradient })}
           />
           {design.useGradient ? (
-            <div className="flex flex-col gap-3 rounded-xl bg-zinc-50 p-3">
+            <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-muted/60 p-3">
+              <span
+                aria-hidden="true"
+                className="h-2 rounded-full border border-border"
+                style={{
+                  backgroundImage:
+                    design.gradientType === "radial"
+                      ? `radial-gradient(circle at center, ${design.fgColor}, ${design.fgColor2})`
+                      : `linear-gradient(${design.gradientRotation}deg, ${design.fgColor}, ${design.fgColor2})`,
+                }}
+              />
               <ColorField
                 label="Second color"
                 value={design.fgColor2}
@@ -152,7 +168,7 @@ export default function DesignPanel() {
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-5">
+        <div className="flex flex-col gap-3 border-t border-border/70 pt-5">
           <SectionTitle>Options</SectionTitle>
           <Field
             label="Error correction"
@@ -176,14 +192,14 @@ export default function DesignPanel() {
           />
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-5">
+        <div className="flex flex-col gap-3 border-t border-border/70 pt-5">
           <SectionTitle>Logo</SectionTitle>
           <div className="flex items-center gap-3">
             {design.logo ? (
               <>
                 <span
                   aria-hidden="true"
-                  className="h-12 w-12 shrink-0 rounded-lg border border-zinc-200 bg-zinc-50 bg-contain bg-center bg-no-repeat"
+                  className="h-12 w-12 shrink-0 rounded-xl border border-border bg-surface-muted bg-contain bg-center bg-no-repeat"
                   style={{ backgroundImage: `url(${design.logo})` }}
                 />
                 <Button
@@ -199,7 +215,25 @@ export default function DesignPanel() {
                 </Button>
               </>
             ) : null}
-            <label className="flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-dashed border-zinc-300 px-3 py-2.5 text-sm text-zinc-600 transition hover:border-zinc-400 hover:bg-zinc-50">
+            <label
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                const file = event.dataTransfer.files?.[0];
+                if (file) loadLogo(file);
+              }}
+              className={cn(
+                "flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-dashed px-3 py-2.5 text-sm transition",
+                dragging
+                  ? "border-accent bg-surface-muted text-foreground"
+                  : "border-border-strong text-muted hover:bg-surface-muted hover:text-foreground",
+              )}
+            >
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -216,7 +250,7 @@ export default function DesignPanel() {
             </Notice>
           ) : null}
           {design.logo ? (
-            <div className="flex flex-col gap-3 rounded-xl bg-zinc-50 p-3">
+            <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-muted/60 p-3">
               <RangeField
                 label="Logo size"
                 value={Math.round(design.logoSize * 100)}
