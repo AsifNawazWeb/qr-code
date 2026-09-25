@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QR Code Studio
 
-## Getting Started
+A client-side QR code generator built with Next.js, TypeScript and Tailwind CSS. Design custom QR codes, preview them live, and download them as PNG, SVG, JPEG or PDF.
 
-First, run the development server:
+Everything runs in the browser — content, logos and history never leave the device.
+
+## Features
+
+- **Content types:** URL, plain text, Wi-Fi, vCard, email, SMS, phone
+- **Design:** dot and corner styles, solid or gradient colors, transparent background, margin, error correction level
+- **Logo:** upload an image, control its size and margin, hide the dots behind it
+- **Export:** PNG / JPEG at up to 2048 px, scalable SVG, print-ready PDF
+- **History:** save designs to the browser and reload them later
+- **No backend:** no database, no accounts, no tracking
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command             | Description                              |
+| ------------------- | ---------------------------------------- |
+| `npm run dev`       | Start the development server             |
+| `npm run build`     | Production build                         |
+| `npm start`         | Serve the production build (Node server) |
+| `npm run lint`      | Run ESLint                               |
+| `npm run typecheck` | Run TypeScript without emitting files    |
+| `npm test`          | Run unit tests with Vitest               |
 
-## Learn More
+## Static hosting
 
-To learn more about Next.js, take a look at the following resources:
+The app is fully static. To deploy on any web server (nginx, Caddy, GitHub Pages, …), enable the static export in `next.config.ts`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```ts
+const nextConfig: NextConfig = {
+  output: "export",
+};
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Then run `npm run build` and serve the generated `out/` directory. Note that `npm start` is not used in this mode.
 
-## Deploy on Vercel
+## How it works
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/lib/qr/encoders.ts` builds the payload string for each content type (Wi-Fi escaping, vCard 3.0, `mailto:`, `SMSTO:`, `tel:`).
+- `src/lib/qr/options.ts` maps the design settings to [`qr-code-styling`](https://github.com/kozakdenys/qr-code-styling) options.
+- `src/lib/qr/export.ts` renders temporary instances for PNG/JPEG/SVG downloads and wraps the PNG in a PDF via `pdf-lib`.
+- `src/lib/store.ts` keeps drafts, design and history in `localStorage` using Zustand's persist middleware.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+QR codes are static: the payload is fixed at generation time. There is no redirect service or scan tracking.
